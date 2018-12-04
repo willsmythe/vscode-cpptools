@@ -1,5 +1,7 @@
 # vscode-cpptools
 
+[![Build Status](https://dev.azure.com/ms/vscode-cpptools/_apis/build/status/Microsoft.vscode-cpptools)](https://dev.azure.com/ms/vscode-cpptools/_build/latest?definitionId=19)
+
 This is the official repository for the [Microsoft C/C++ extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools).
 
 The `vscode-cpptools` repository is where we do development and there are many ways you can support the extension, for example:

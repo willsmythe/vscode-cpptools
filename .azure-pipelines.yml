@@ -1,0 +1,65 @@
+pool:
+  vmImage: ubuntu-16.04
+
+variables:
+  CPPTOOL_VERSION: 'v0.14.6-insiders'
+  CPPTOOLS_DEV: '1'
+
+trigger:
+- master
+
+steps:
+- script: |
+    sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+    curl -sSL "https://packages.microsoft.com/keys/microsoft.asc" | sudo -E apt-key add -
+    echo "deb https://packages.microsoft.com/repos/microsoft-ubuntu-trusty-prod trusty main" | sudo tee -a /etc/apt/sources.list >/dev/null
+    sudo apt-get install gdb g++-4.9 dialog apt-utils
+    echo "After apt-get install: $?"
+  displayName: 'Install dependencies'
+
+- script: |
+    set -e
+    /usr/bin/Xvfb :10 -ac >> /tmp/Xvfb.out 2>&1 &
+    disown -ar
+  displayName: 'Start xvfb'
+
+- script: |
+    # Download debugAdapters from an existing extension version. See settings to set CPPTOOL_VERSION
+    mkdir -p ~/.vscode/extensions/ms-vscode.cpptools-$CPPTOOL_VERSION
+    wget https://github.com/Microsoft/vscode-cpptools/releases/download/$CPPTOOL_VERSION/cpptools.vsix -O ~/cpptools.vsix
+    unzip ~/cpptools.vsix "extension/debugAdapters/*" -d ~/.
+    mv ~/extension/debugAdapters ~/.vscode/extensions/ms-vscode.cpptools-$CPPTOOL_VERSION/debugAdapters
+
+- task: NodeTool@0
+  displayName: Use Node 8.x'
+  inputs:
+    versionSpec: 8.x
+
+- script: |  
+    npm install
+    echo "After npm install: $?"
+    npm run compile
+  displayName: 'Compile extension'
+  workingDirectory: '$(Build.SourcesDirectory)/Extension'
+
+- script: |
+    npm run tslint
+    echo "After npm run tslint: $?"
+  displayName: 'Run lint'
+  workingDirectory: '$(Build.SourcesDirectory)/Extension'
+
+- script: |
+    # pr-check needs to run before test. test modifies package.json.
+    npm run pr-check
+    echo "After npm run pre-check: $?"
+    npm run unitTests
+    echo "After npm run unitTests: $?"
+  displayName: 'Run unit tests'    
+  workingDirectory: '$(Build.SourcesDirectory)/Extension'
+
+- script: |  
+    # TODO: Merge tests into one group due to Gulp 4.0    
+    npm run integrationTests && find ~ -name "integrationTests.log" -type f -exec cat {} \;    
+    echo "After npm run integrationTests: $?"
+  displayName: 'Run integration tests'
+  workingDirectory: '$(Build.SourcesDirectory)/Extension'
