@@ -2,8 +2,11 @@ pool:
   vmImage: ubuntu-16.04
 
 variables:
-  CPPTOOL_VERSION: 'v0.14.6-insiders'
-  CPPTOOLS_DEV: '1'
+  CPPTOOL_VERSION: v0.14.6-insiders
+  CPPTOOLS_DEV: 1
+  CXX: 'g++-4.9'
+  CC: 'gcc-4.9'
+  DISPLAY: ':10.0'
 
 trigger:
 - master
@@ -14,7 +17,6 @@ steps:
     curl -sSL "https://packages.microsoft.com/keys/microsoft.asc" | sudo -E apt-key add -
     echo "deb https://packages.microsoft.com/repos/microsoft-ubuntu-trusty-prod trusty main" | sudo tee -a /etc/apt/sources.list >/dev/null
     sudo apt-get install gdb g++-4.9 dialog apt-utils
-    echo "After apt-get install: $?"
   displayName: 'Install dependencies'
 
 - script: |
@@ -37,23 +39,19 @@ steps:
 
 - script: |  
     npm install
-    echo "After npm install: $?"
     npm run compile
   displayName: 'Compile extension'
   workingDirectory: '$(Build.SourcesDirectory)/Extension'
 
 - script: |
     npm run tslint
-    echo "After npm run tslint: $?"
   displayName: 'Run lint'
   workingDirectory: '$(Build.SourcesDirectory)/Extension'
 
 - script: |
     # pr-check needs to run before test. test modifies package.json.
     npm run pr-check
-    echo "After npm run pre-check: $?"
     npm run unitTests
-    echo "After npm run unitTests: $?"
   displayName: 'Run unit tests'    
   workingDirectory: '$(Build.SourcesDirectory)/Extension'
 
